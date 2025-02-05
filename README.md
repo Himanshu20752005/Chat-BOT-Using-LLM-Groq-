@@ -48,7 +48,6 @@ pip install streamlit langchain langchain_groq groq python-dotenv
 ├── requirements.txt # Dependencies
 ├── README.md       # Documentation
 ```
-## Ui Through Streamlit
 
 ## License
 This project is licensed under the MIT License.
