@@ -1,79 +1,71 @@
-# Import necessary libraries
-from dotenv import load_dotenv  # For loading environment variables from .env file
-import os  # For accessing system environment variables
-import streamlit as st  # For building the web UI
-from langchain.chains import ConversationChain  # For handling AI conversation flow
-from langchain.chains.conversation.memory import ConversationBufferWindowMemory  # For maintaining conversational memory
-from langchain_groq import ChatGroq  # For connecting with Groq's LLM
+from dotenv import load_dotenv
+import os 
 
-# Load environment variables from .env file
-load_dotenv()
+load_dotenv()  
 
-# Retrieve the API key for Groq from environment variables
 groq_api_key = os.getenv("GROQ_API_KEY")
 
-# Check if the API key is available, if not, show an error in Streamlit and stop execution
 if not groq_api_key:
-    st.error("Error: GROQ_API_KEY is missing. Check your .env file.")
-    st.stop()  # Stop execution to prevent further errors
+    raise ValueError("Error: GROQ_API_KEY is missing. Check your .env file.")
 
-# Define the main function for the Streamlit app
+
+import streamlit as st
+import os
+from groq import Groq
+import random
+
+from langchain.chains import ConversationChain
+from langchain.chains.conversation.memory import ConversationBufferWindowMemory
+from langchain_groq import ChatGroq
+from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv
+import os 
+
+load_dotenv()
+
+groq_api_key = os.environ['GROQ_API_KEY']
+
 def main():
-    # Set the title of the web app
-    st.title("Coding Mentor")
 
-    # Sidebar section for selecting model and settings
-    st.sidebar.title("Group No 3")  # Sidebar title
-    st.sidebar.subheader("Select an LLM")  # Subtitle for model selection
-    
-    # Dropdown to choose between two available LLM models
+    st.title("Coding Mentor ")
+
+    # Add customization options to the sidebar
+    st.sidebar.title('Group No 4')
+    st.sidebar.title('Select an LLM')
     model = st.sidebar.selectbox(
-        "Choose a model",
-        ["mixtral-8x7b-32768", "llama2-70b-4096"]
+        'Choose a model',
+        ['mixtral-8x7b-32768', 'llama2-70b-4096']
     )
+    conversational_memory_length = st.sidebar.slider('Conversational memory length:', 1, 10, value = 5)
 
-    # Slider to select the memory length (how many past messages the chatbot remembers)
-    conversational_memory_length = st.sidebar.slider("Conversational memory length:", 1, 10, value=5)
+    memory=ConversationBufferWindowMemory(k=conversational_memory_length)
 
-    # Initialize conversational memory with the selected memory length
-    memory = ConversationBufferWindowMemory(k=conversational_memory_length)
-
-    # Initialize chat history in session state if it doesn't exist
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []  # Create an empty list to store chat messages
-
-    else:
-        # If chat history exists, restore previous conversations in memory
-        for message in st.session_state.chat_history:
-            if "human" in message and "AI" in message:  # Ensure both keys exist
-                memory.save_context({"input": message["human"]}, {"output": message["AI"]})
-
-    # Initialize Groq Chat model with the selected LLM
-    groq_chat = ChatGroq(
-        groq_api_key=groq_api_key,  # API key to authenticate requests
-        model_name=model  # Selected model
-    )
-
-    # Set up conversation handling using Langchain's ConversationChain
-    conversation = ConversationChain(
-        llm=groq_chat,  # Connects to the Groq chatbot
-        memory=memory  # Stores the short-term conversation memory
-    )
-
-    # Input box for users to type their questions
     user_question = st.text_area("Ask a question:")
 
-    if user_question:  # Check if user entered a question
-        # Get AI's response by passing the user question to the chatbot
-        response = conversation.predict(input=user_question)
+    # session state variable
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history=[]
+    else:
+        for message in st.session_state.chat_history:
+            memory.save_context({'input':message['human']},{'output':message['AI']})
 
-        # Store the conversation in chat history (for memory)
-        message = {"human": user_question, "AI": response}
+
+    # Initialize Groq Langchain chat object and conversation
+    groq_chat = ChatGroq(
+            groq_api_key=groq_api_key, 
+            model_name=model
+    )
+
+    conversation = ConversationChain(
+            llm=groq_chat,
+            memory=memory
+    )
+
+    if user_question:
+        response = conversation(user_question)
+        message = {'human':user_question,'AI':response['response']}
         st.session_state.chat_history.append(message)
+        st.write("Chatbot:", response['response'])
 
-        # Display chatbot's response
-        st.write("Chatbot:", response)
-
-# Run the main function when executing the script
 if __name__ == "__main__":
     main()
