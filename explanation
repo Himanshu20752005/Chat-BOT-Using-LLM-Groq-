@@ -1,0 +1,137 @@
+# Explanation of the Streamlit-based Coding Mentor Application
+
+## 1. Importing Required Libraries
+The script begins by importing necessary libraries:
+```python
+from dotenv import load_dotenv
+import os
+```
+- `dotenv` is used to load environment variables from a `.env` file.
+- `os` is used to access these environment variables.
+
+Other essential libraries include:
+```python
+import streamlit as st
+import random
+from langchain.chains import ConversationChain
+from langchain.chains.conversation.memory import ConversationBufferWindowMemory
+from langchain_groq import ChatGroq
+from langchain.prompts import PromptTemplate
+```
+- `streamlit`: A Python framework for creating interactive web applications.
+- `random`: Used to generate random values (not explicitly used here but imported).
+- `langchain`: A library for building AI-powered applications.
+  - `ConversationChain`: A chain that manages conversations with memory.
+  - `ConversationBufferWindowMemory`: Stores past interactions to maintain conversational context.
+  - `ChatGroq`: A wrapper around Groq's API for chat models.
+
+## 2. Loading Environment Variables
+```python
+load_dotenv()  
+groq_api_key = os.getenv("GROQ_API_KEY")
+```
+- Loads environment variables from the `.env` file.
+- Retrieves the `GROQ_API_KEY` required to use Groq's API.
+- If the API key is missing, an error is raised:
+```python
+if not groq_api_key:
+    raise ValueError("Error: GROQ_API_KEY is missing. Check your .env file.")
+```
+
+## 3. Defining the `main()` Function
+The `main()` function is responsible for initializing the Streamlit app:
+
+### a. Setting Up the Title
+```python
+st.title("Coding Mentor ")
+```
+This sets the title of the web application.
+
+### b. Sidebar Customization
+```python
+st.sidebar.title('Group No 4')
+st.sidebar.title('Select an LLM')
+```
+This adds a sidebar with the group name and an LLM selection dropdown:
+```python
+model = st.sidebar.selectbox(
+    'Choose a model',
+    ['mixtral-8x7b-32768', 'llama2-70b-4096']
+)
+```
+Users can choose between two available models.
+
+A slider is also provided to set the conversational memory length:
+```python
+conversational_memory_length = st.sidebar.slider('Conversational memory length:', 1, 10, value=5)
+```
+
+### c. Initializing Conversational Memory
+```python
+memory = ConversationBufferWindowMemory(k=conversational_memory_length)
+```
+This object stores previous chat messages to provide context to responses.
+
+### d. Text Input for User's Question
+```python
+user_question = st.text_area("Ask a question:")
+```
+A text area is created where users can input their questions.
+
+### e. Managing Chat History
+```python
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+else:
+    for message in st.session_state.chat_history:
+        memory.save_context({'input': message['human']}, {'output': message['AI']})
+```
+- `st.session_state` is used to persist chat history across interactions.
+- If the chat history exists, past messages are loaded into memory.
+
+### f. Initializing the Groq Chat Model
+```python
+groq_chat = ChatGroq(
+    groq_api_key=groq_api_key,
+    model_name=model
+)
+```
+- `ChatGroq` is initialized using the selected model and API key.
+
+### g. Setting Up the Conversation Chain
+```python
+conversation = ConversationChain(
+    llm=groq_chat,
+    memory=memory
+)
+```
+This chain handles user queries while maintaining conversational memory.
+
+### h. Processing User Questions
+```python
+if user_question:
+    response = conversation(user_question)
+    message = {'human': user_question, 'AI': response['response']}
+    st.session_state.chat_history.append(message)
+    st.write("Chatbot:", response['response'])
+```
+- If a user submits a question, it is processed using the conversation chain.
+- The response is stored in chat history and displayed on the UI.
+
+## 4. Running the Application
+```python
+if __name__ == "__main__":
+    main()
+```
+This ensures that the `main()` function executes when the script is run directly.
+
+## Summary
+This Streamlit application serves as a coding mentor chatbot using Groq's AI models. It includes:
+- Environment variable handling
+- A sidebar for model selection and memory length adjustment
+- Persistent conversational memory
+- An interactive UI for user queries
+- Groq API integration via LangChain
+
+This setup allows users to engage in meaningful coding-related conversations while maintaining context across interactions.
+
