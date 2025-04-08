@@ -53,4 +53,4 @@ pip install streamlit langchain langchain_groq groq python-dotenv
 This project is licensed under the MIT License.
 
 ## Author
-[Your Name](https://github.com/Himanshu20752005)
+[Himanshu Pandey](https://github.com/Himanshu20752005)
